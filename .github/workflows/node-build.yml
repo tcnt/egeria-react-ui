@@ -4,6 +4,7 @@
 name: Egeria react UI build
 
 on:
+  push:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 # Run client/server in parallel. 
