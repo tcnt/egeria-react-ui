@@ -8,7 +8,8 @@ on:
     branches: [main,release-*]
   pull_request:
     branches: [main,release-*]
-
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 # Run client/server in parallel. 
 # Code checkout is small so low overhead, 
 # npm build is slow, so benefits from parallelism
@@ -51,39 +52,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-        if: ${{ github.event_name == 'push' && github.repository == 'odpi/egeria-react-ui' }}
       - name: Login to container registry (Quay.io)
         uses: docker/login-action@v1
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_IO_USERNAME }}
           password: ${{ secrets.QUAY_IO_ACCESS_TOKEN }}
-        if: ${{ github.event_name == 'push' && github.repository == 'odpi/egeria-react-ui' }}
-      # For releases (ie not main)
-      - name: Build and push (not main merge)
-        if: github.ref != 'refs/heads/main'
-        id: docker_build_release
-        uses: docker/build-push-action@v2 
-        with:
-          push:  ${{ github.event_name == 'push' && github.repository == 'odpi/egeria-react-ui' }} 
-          tags: odpi/egeria-react-ui:${{ steps.package-version.outputs.current-version}}, quay.io/odpi/egeria-react-ui:${{ steps.package-version.outputs.current-version}}
-          context: .
-          file: ./Dockerfile
       # For main code stream
       - name: Build and push (main merge)
-        if: github.ref == 'refs/heads/main'
         id: docker_build_main
         uses: docker/build-push-action@v2
         with:
-          push:  ${{ github.event_name == 'push' && github.repository == 'odpi/egeria-react-ui' }} 
-          tags: odpi/egeria-react-ui:${{ steps.package-version.outputs.current-version}}, odpi/egeria-react-ui:latest, quay.io/odpi/egeria-react-ui:${{ steps.package-version.outputs.current-version}}, quay.io/odpi/egeria-react-ui:latest
+          push: true
+          tags: tcnthomas/egeria-react-ui:${{ steps.package-version.outputs.current-version}}, tcnthomas/egeria-react-ui:latest, quay.io/tcnthomas/egeria-react-ui:${{ steps.package-version.outputs.current-version}}, quay.io/tcnthomas/egeria-react-ui:latest
           context: .
           file: ./Dockerfile
-      - name: Image digest (release)
-        if: github.ref != 'refs/heads/main'
-        run: echo ${{ steps.docker_build_release.outputs.digest }}
       - name: Image digest (main)
-        if: github.ref == 'refs/heads/main'
         run: echo ${{ steps.docker_build_main.outputs.digest }}
       - name: Create Archive
         run: tar -zcf /tmp/egeria-react-ui.tar.gz .
